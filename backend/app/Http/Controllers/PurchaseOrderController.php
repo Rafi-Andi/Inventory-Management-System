@@ -10,7 +10,9 @@ use App\Models\Administrator;
 use App\Models\PurchaseOrder;
 use App\Models\WarehouseItem;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Resources\PurchaseOrderResource;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PurchaseOrderController extends Controller
 {
@@ -126,89 +128,89 @@ class PurchaseOrderController extends Controller
 
     public function approve(Request $request, $id)
     {
+        $user = $request->user();
+
+        if (!$user || !Administrator::where('id', $user->id)->exists()) {
+            return response()->json(["message" => "Unauthorized access."], 403);
+        }
+
         try {
-            $user = $request->user();
+            DB::beginTransaction();
 
-            $admins = Administrator::where('id', $user->id)->first();
+            $purchaseOrder = PurchaseOrder::with('purchase_order_items')
+                ->lockForUpdate()
+                ->findOrFail($id);
 
-            if (!$admins) {
-                return response()->json([
-                    "message" => "unathorized"
-                ], 403);
+            if ($purchaseOrder->status !== 'pending') {
+                throw new Exception("Purchase order has already been processed..", 409);
             }
 
-            DB::transaction(function () use ($id) {
+            $toWarehouseId = $purchaseOrder->to_warehouse_id;
+            $fromWarehouseId = $purchaseOrder->from_warehouse_id;
 
-                $purchaseOrder = PurchaseOrder::with('purchase_order_items')->findOrFail($id);
+            if ($fromWarehouseId) {
+                $itemIds = $purchaseOrder->purchase_order_items->pluck('pivot.item_id');
 
-                if ($purchaseOrder->status !== 'pending') {
-                    throw new Exception("Purchase order has already been processed.", 409);
-                }
-
-                $toWarehouseId = $purchaseOrder->to_warehouse_id;
-                $fromWarehouseId = $purchaseOrder->from_warehouse_id;
-
-                if ($fromWarehouseId) {
-                    foreach ($purchaseOrder->purchase_order_items as $item) {
-                        $itemId = $item->pivot->item_id;
-                        $requestedQuantity = (int) $item->pivot->quantity;
-
-                        $warehouseItem = WarehouseItem::where('warehouse_id', $fromWarehouseId)
-                            ->where('item_id', $itemId)
-                            ->first();
-
-                        $availableStock = $warehouseItem ? $warehouseItem->stock : 0;
-
-                        if ($availableStock < $requestedQuantity) {
-                            $itemName = Item::find($itemId)->name ?? 'Unknown Item';
-
-                            throw new Exception("Insufficient stock in source warehouse for item: {$itemName}. Available: {$availableStock}, Required: {$requestedQuantity}", 400);
-                        }
-                    }
-                }
+                $warehouseStocks = WarehouseItem::where('warehouse_id', $fromWarehouseId)
+                    ->whereIn('item_id', $itemIds)
+                    ->pluck('stock', 'item_id')
+                    ->toArray();
 
                 foreach ($purchaseOrder->purchase_order_items as $item) {
                     $itemId = $item->pivot->item_id;
-                    $quantity = (int) $item->pivot->quantity;
+                    $requestedQuantity = (int) $item->pivot->quantity;
+                    $availableStock = $warehouseStocks[$itemId] ?? 0;
 
-                    WarehouseItem::updateOrCreate(
-                        ['warehouse_id' => $toWarehouseId, 'item_id' => $itemId],
-                        ['stock' => DB::raw('stock + ' . $quantity)]
-                    );
+                    if ($requestedQuantity <= 0) {
+                        throw new Exception("Quantity for item '{$item->name}' must be greater than zero.", 400);
+                    }
 
-                    if ($fromWarehouseId) {
-                        WarehouseItem::where('warehouse_id', $fromWarehouseId)
-                            ->where('item_id', $itemId)
-                            ->update(['stock' => DB::raw('stock - ' . $quantity)]);
+                    if ($availableStock < $requestedQuantity) {
+                        $itemName = $item->name ?? 'Unknown Item';
+                        throw new Exception("Insufficient stock in source warehouse for item: {$itemName}. Available: {$availableStock}, Required: {$requestedQuantity}", 400);
                     }
                 }
+            }
 
-                $purchaseOrder->status = 'received';
-                $purchaseOrder->save();
-            });
+            foreach ($purchaseOrder->purchase_order_items as $item) {
+                $itemId = $item->pivot->item_id;
+                $quantity = (int) $item->pivot->quantity;
 
-            return response()->json([
-                "message" => "Purchase order approved successfully. Stock has been updated."
-            ], 200);
+                if ($quantity <= 0) continue;
+
+                WarehouseItem::updateOrCreate(
+                    ['warehouse_id' => $toWarehouseId, 'item_id' => $itemId],
+                    ['stock' => DB::raw('stock + ' . $quantity)]
+                );
+
+                if ($fromWarehouseId) {
+                    WarehouseItem::where('warehouse_id', $fromWarehouseId)
+                        ->where('item_id', $itemId)
+                        ->update(['stock' => DB::raw('stock - ' . $quantity)]);
+                }
+            }
+
+            $purchaseOrder->status = 'received';
+            $purchaseOrder->save();
+
+            DB::commit();
+
+            return response()->json(["message" => "Purchase order approved successfully. Stock has been updated."], 200);
+        } catch (ModelNotFoundException $e) {
+            DB::rollBack();
+            return response()->json(["message" => "Purchase Order not found."], 404);
         } catch (Exception $e) {
-            $statusCode = $e->getCode();
+            DB::rollBack();
+            $statusCode = $e->getCode() ?: 500;
             $message = $e->getMessage();
 
-            if ($statusCode === 409) {
-                return response()->json(["message" => $message], 409);
+            if (in_array($statusCode, [409, 400])) {
+                return response()->json(["message" => $message], $statusCode);
             }
 
-            if ($statusCode === 400) {
-                return response()->json(["message" => $message], 400);
-            }
-
-            return response()->json([
-                "message" => "Error processing purchase order.",
-                "errors" => $message
-            ], 500);
+            return response()->json(["message" => "Error processing purchase order.", "errors" => $message], 500);
         }
     }
-
     public function reject(Request $request, $id)
     {
         $user = $request->user();

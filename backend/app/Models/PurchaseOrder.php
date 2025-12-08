@@ -13,7 +13,8 @@ class PurchaseOrder extends Model
 
     public function purchase_order_items()
     {
-        return $this->belongsToMany(Item::class, 'purchase_order_items', 'purchase_order_id', 'item_id');
+        return $this->belongsToMany(Item::class, 'purchase_order_items', 'purchase_order_id', 'item_id')
+            ->withPivot('quantity');
     }
 
     public function user()

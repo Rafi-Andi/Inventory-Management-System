@@ -128,7 +128,7 @@ onMounted(() => {
           <th>No</th>
           <th>Item Name</th>
           <th>Category Id</th>
-          <th>Quantity</th>
+          <th>Description</th>
         </tr>
       </thead>
       <tbody>
