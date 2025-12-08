@@ -7,6 +7,17 @@ const formLogin = ref({
   password: '',
 })
 
+const token = localStorage.getItem('token')
+const role = localStorage.getItem('role')
+
+if (token && role) {
+  if (role === 'admin' || role === 'manager') {
+    router.push({ name: 'IndexPurchase' })
+  } else if (role === 'staff') {
+    router.push({ name: 'IndexCategory' })
+  }
+}
+
 const isLoading = ref(false)
 
 const handleLogin = async () => {
@@ -18,14 +29,14 @@ const handleLogin = async () => {
     const role = response.data.data.user.role
     localStorage.setItem('role', role)
     localStorage.setItem('token', response.data.data.token)
-    if(role === 'admin' || role === 'manager'){
-      router.push({name: 'IndexPurchase'})
+    if (role === 'admin' || role === 'manager') {
+      router.push({ name: 'IndexPurchase' })
     }
 
-    router.push({name: 'IndexCategory'})
+    router.push({ name: 'IndexCategory' })
   } catch (error) {
     console.log(error)
-    alert('error')
+    alert(error.response.data.message)
   } finally {
     isLoading.value = false
   }
@@ -41,13 +52,19 @@ const handleLogin = async () => {
       <form @submit.prevent="handleLogin()">
         <div class="mb-3">
           <label for="email" class="form-label">Email</label>
-          <input v-model="formLogin.email" type="email" class="form-control" id="email" placeholder="Enter your email" />
+          <input
+            v-model="formLogin.email"
+            type="email"
+            class="form-control"
+            id="email"
+            placeholder="Enter your email"
+          />
         </div>
 
         <div class="mb-4">
           <label for="password" class="form-label">Password</label>
           <input
-          v-model="formLogin.password"
+            v-model="formLogin.password"
             type="password"
             class="form-control"
             id="password"
@@ -55,7 +72,9 @@ const handleLogin = async () => {
           />
         </div>
 
-        <button type="submit" class="btn btn-primary btn-login">Login</button>
+        <button type="submit" class="btn btn-primary btn-login">
+          {{ isLoading ? 'loading..' : 'Login' }}
+        </button>
       </form>
     </div>
   </div>

@@ -52,8 +52,11 @@ const fetchingItem = async () => {
   console.log(response)
 }
 
+const isLoading = ref(false)
+
 const handlePO = async () => {
   try {
+    isLoading.value = true
     console.log(form.value)
     const response = await axios.post('http://127.0.0.1:8000/api/purchase-orders', form.value, {
       headers: {
@@ -65,8 +68,10 @@ const handlePO = async () => {
 
     alert('berhasil')
   } catch (error) {
-    alert('error')
-    console.log(error)
+    alert(error.response.data.errors || error.response.data.message)
+    console.log(error.response.data.errors)
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -82,6 +87,7 @@ onMounted(() => {
     <div class="page-header">
       <h1>Create Purchase Order</h1>
     </div>
+
     <hr />
 
     <form class="form-container" @submit.prevent="handlePO()">
@@ -134,8 +140,8 @@ onMounted(() => {
       </table>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Submit Request</button>
-        <a href="index.html" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">{{ isLoading ? 'Loading..' : 'Submit Request'}}</button>
+        <router-link :to="{name: 'IndexPurchase'}" class="btn btn-outline-secondary">Cancel</router-link>
       </div>
     </form>
   </div>

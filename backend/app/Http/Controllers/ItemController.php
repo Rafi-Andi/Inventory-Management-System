@@ -64,7 +64,7 @@ class ItemController extends Controller
             $validate = $request->validate([
                 "name" => "string|required",
                 "category_id" => "required|integer",
-                "description" => "string"
+                "description" => ""
             ]);
 
             $item = Item::create($validate);
@@ -137,7 +137,7 @@ class ItemController extends Controller
             $validate = $request->validate([
                 "name" => "string|required",
                 "category_id" => "required|integer",
-                "description" => "string"
+                "description" => ""
             ]);
 
             $item = Item::find($id);

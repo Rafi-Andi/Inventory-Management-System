@@ -1,10 +1,18 @@
 <script setup>
+import router from '@/router'
 import axios from 'axios'
 import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
+const route = useRoute()
+const id = route.params.id
+const name = route.params.name
+const category_id = route.params.category_id
+const description = route.params.description
+
 const formItem = ref({
-  name: '',
-  category_id: '',
-  description: '',
+  name: name,
+  category_id: category_id,
+  description: description,
 })
 
 const dataCategory = ref(null)
@@ -18,42 +26,41 @@ const fetchingCategory = async () => {
   dataCategory.value = response.data.data
 }
 
-onMounted(() => {
-  fetchingCategory()
-})
 const isLoading = ref(false)
 
-const handleItem = async () => {
+const handleEdit = async () => {
   try {
-    isLoading.value = true
-    const response = await axios.post('http://127.0.0.1:8000/api/items', formItem.value, {
+    const response = await axios.put(`http://127.0.0.1:8000/api/items/${id}`, formItem.value, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
       },
     })
-    alert('berhasil tambah')
+
     console.log(response)
+    alert('Berhasil edit item')
+    router.push({ name: 'IndexItem' })
   } catch (error) {
     console.log(error)
     alert(error.response.data.errors)
-  } finally {
-    isLoading.value = false
   }
 }
+
+onMounted(() => {
+  fetchingCategory()
+})
 </script>
 
 <template>
   <div class="container-fluid">
     <div class="page-header">
-      <h1>Create Item</h1>
+      <h1>Edit Item</h1>
     </div>
     <hr />
 
-    <form class="form-container" @submit.prevent="handleItem()">
+    <form class="form-container" @submit.prevent="handleEdit()">
       <div class="mb-3">
         <label for="name" class="form-label">Item Name</label>
         <input
-        required
           v-model="formItem.name"
           type="text"
           class="form-control"
@@ -64,7 +71,7 @@ const handleItem = async () => {
 
       <div class="mb-3">
         <label for="Item" class="form-label">Item</label>
-        <select required  v-model="formItem.category_id" class="form-select" id="Item">
+        <select v-model="formItem.category_id" class="form-select" id="Item">
           <option value="" selected disabled>Selected Category</option>
           <option v-for="(item, index) in dataCategory" :key="index" :value="item?.id" selected>
             {{ item?.name }}
@@ -75,7 +82,6 @@ const handleItem = async () => {
       <div class="mb-3">
         <label for="description" class="form-label">Description</label>
         <textarea
-        required
           v-model="formItem.description"
           class="form-control"
           id="description"
@@ -85,8 +91,10 @@ const handleItem = async () => {
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">{{ isLoading ? 'Loading..' : 'Create' }}</button>
-        <router-link :to="{name: 'IndexItem'}" class="btn btn-outline-secondary">Cancel</router-link>
+        <button type="submit" class="btn btn-primary">{{ isLoading ? 'Loading..' : 'Edit' }}</button>
+        <router-link :to="{ name: 'IndexItem' }" class="btn btn-outline-secondary"
+          >Cancel</router-link
+        >
       </div>
     </form>
   </div>

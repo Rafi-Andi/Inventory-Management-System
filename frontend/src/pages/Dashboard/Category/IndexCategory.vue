@@ -11,8 +11,9 @@ const fetchingCategory = async () => {
       Authorization: `Bearer ${localStorage.getItem('token')}`,
     },
   })
-
   dataCategory.value = response.data.data
+
+  console.log(dataCategory.value)
 }
 
 onMounted(() => {
@@ -54,8 +55,9 @@ const handleDelete = async (id) => {
         },
       },
     )
-    const index = dataCategory.value.findIndex((category) => (category.id = id))
+    const index = dataCategory.value.findIndex(category => (category.id === id))
     
+    console.log(index)
     dataCategory.value.splice(index, 1)
     alert('berhasil hapus')
 
@@ -89,7 +91,7 @@ const handleDelete = async (id) => {
           <td>{{ item?.name }}</td>
           <td>{{ item?.items_count }}</td>
           <td v-if="role === 'admin'">
-            <a href="#" class="btn btn-warning btn-sm" @click="handleEdit(item.id)">Edit</a>
+            <router-link :to="{name: 'EditCategory', params: {id: item.id, name: item.name}}" href="#" class="btn btn-warning btn-sm">Edit</router-link>
             <a href="#" class="btn btn-danger btn-sm" @click="handleDelete(item.id)">Delete</a>
           </td>
         </tr>

@@ -1,10 +1,18 @@
 <script setup>
 import router from '@/router';
 
-if (!localStorage.getItem('token')) {
+const role = localStorage.getItem('role')
+const token = localStorage.getItem('token')
+if (!token) {
   router.push({ name: 'Login' })
 }
-const role = localStorage.getItem('role')
+if (token && role) {
+  if (role === 'admin' || role === 'manager') {
+    router.push({ name: 'IndexPurchase' })
+  } else if (role === 'staff') {
+    router.push({ name: 'IndexCategory' })
+  }
+}
 const logout = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('role')
@@ -16,7 +24,7 @@ const logout = () => {
   <div class="container">
     <div class="sidebar">
       <div class="sidebar-header">
-        <h3 class="logo">Dashboard App</h3>
+        <h3 class="logo">Dashboard {{ role }}</h3>
         <button class="toggle-btn" aria-label="Toggle Sidebar">☰</button>
       </div>
 
@@ -34,11 +42,11 @@ const logout = () => {
         </router-link>
         <router-link active-class="active" :to="{ name: 'IndexItem' }"> Item </router-link>
         <router-link active-class="active" :to="{ name: 'IndexSupplier' }"> Supplier </router-link>
+        <div class="sidebar-footer">
+          <h5 style="cursor: pointer; color: lightcoral;" @click="logout()" >Logout</h5>
+        </div>
       </ul>
 
-      <div class="sidebar-footer">
-        <h5 style="cursor: pointer" @click="logout()">Keluar</h5>
-      </div>
     </div>
 
     <div class="main-content">

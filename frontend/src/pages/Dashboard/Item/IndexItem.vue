@@ -36,6 +36,8 @@ const fetchItems = async () => {
   });
 
   dataItem.value = response.data.data.data;
+
+  console.log(response)
   lastPage.value = response.data.data.last_page;
 };
 
@@ -67,30 +69,6 @@ const prevPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--;
     fetchItems();
-  }
-};
-
-const handleEdit = async (id) => {
-  try {
-    const newName = prompt("Masukkan nama baru");
-    const newCategoryId = prompt("Masukkan category ID baru");
-
-    if (!newName || !newCategoryId) return alert("Input tidak boleh kosong");
-
-    await axios.put(
-      `http://127.0.0.1:8000/api/items/${id}`,
-      { name: newName, category_id: newCategoryId },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    fetchItems();
-    alert("Berhasil edit item");
-  } catch (error) {
-    alert("Gagal edit item");
   }
 };
 
@@ -156,7 +134,7 @@ onMounted(() => {
           <td>{{ item.category.name }}</td>
           <td>{{ item.description }}</td>
           <td v-if="role === 'admin'">
-            <button class="btn btn-warning btn-sm me-2" @click="handleEdit(item.id)">Edit</button>
+            <router-link :to="{name: 'EditItem', params: {id: item?.id, name: item?.name, category_id: item.category_id, description: item.description}}" class="btn btn-warning btn-sm me-2">Edit</router-link>
             <button class="btn btn-danger btn-sm" @click="handleDelete(item.id)">Delete</button>
           </td>
         </tr>

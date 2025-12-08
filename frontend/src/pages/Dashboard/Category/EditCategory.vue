@@ -2,28 +2,36 @@
 import router from '@/router'
 import axios from 'axios'
 import { ref } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const id = route.params.id
+const name = route.params.name
 const formCategory = ref({
-  name: '',
+  name: name,
 })
 
 const isLoading = ref(false)
 
-const handleCategory = async () => {
+const handleEdit = async () => {
   try {
     isLoading.value = true
-    const response = await axios.post('http://127.0.0.1:8000/api/categories', formCategory.value, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
+    const response = await axios.put(
+      `http://127.0.0.1:8000/api/categories/${id}`,
+      formCategory.value,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       },
-    })
-    alert('berhasil tambah')
-    console.log(response)
-
+    )
+    alert('berhasil edit')
     formCategory.value.name = ''
+    router.push({name: 'IndexCategory'})
   } catch (error) {
     console.log(error)
-    alert(error.response.data.errors)
-  } finally {
+    alert(error.response.data.message)
+  } finally{
     isLoading.value = false
   }
 }
@@ -36,11 +44,10 @@ const handleCategory = async () => {
     </div>
     <hr />
 
-    <form class="form-container" @submit.prevent="handleCategory()">
+    <form class="form-container" @submit.prevent="handleEdit()">
       <div class="mb-3">
         <label for="name" class="form-label">Category Name</label>
         <input
-        required
           type="text"
           v-model="formCategory.name"
           class="form-control"
@@ -50,7 +57,7 @@ const handleCategory = async () => {
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">{{ isLoading ? "Loading.." : "Create" }}</button>
+        <button type="submit" class="btn btn-primary">{{ isLoading ? "Loading.." : "Edit" }}</button>
         <router-link :to="{ name: 'IndexCategory' }" class="btn btn-outline-secondary"
           >Cancel</router-link
         >

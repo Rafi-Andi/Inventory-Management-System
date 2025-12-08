@@ -41,8 +41,7 @@ const handleApprove = async (id) => {
     alert('berhasil')
     dataPurchase.value.status = 'received'
   } catch (error) {
-    alert('error')
-    console.log(error)
+    alert(error.response.data.message)
   }
 }
 const handleReject = async (id) => {
@@ -72,19 +71,17 @@ onMounted(() => {
 <template>
   <div class="container-fluid">
     <div class="page-header">
-      <div style="margin-bottom: 2px;">
+      <div style="margin-bottom: 2px">
         <router-link :to="{ name: 'IndexPurchase' }" class="btn-back">&larr; Back</router-link>
         <h1>PURCHASE-{{ id }}</h1>
-        <span class="badge" :class="dataPurchase?.status">{{
-          dataPurchase?.status
-        }}</span>
+        <span class="badge" :class="dataPurchase?.status">{{ dataPurchase?.status }}</span>
       </div>
       <div>
         <button
           @click="handleApprove(dataPurchase.id)"
           v-if="role === 'admin' && dataPurchase?.status === 'pending'"
           class="btn btn-success"
-          style="margin-right: 2px;"
+          style="margin-right: 2px"
         >
           Approve
         </button>

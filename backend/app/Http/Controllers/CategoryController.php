@@ -52,7 +52,7 @@ class CategoryController extends Controller
                 ], 401);
             }
             $validate = $request->validate([
-                "name" => "string|required"
+                "name" => "string|required|unique:categories,name"
             ]);
 
             $category = Category::create([

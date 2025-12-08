@@ -10,6 +10,8 @@ import IndexWarehouse from '@/pages/Warehouse/IndexWarehouse.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import CreatePurchase from '@/pages/Dashboard/Purchase/CreatePurchase.vue'
 import IndexSupplier from '@/pages/Dashboard/Supplier/IndexSupplier.vue'
+import EditItem from '@/pages/Dashboard/Item/EditItem.vue'
+import EditCategory from '@/pages/Dashboard/Category/EditCategory.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -49,6 +51,11 @@ const router = createRouter({
           component: CreateCategory,
         },
         {
+          path: '/edit-category/:id/:name',
+          name: 'EditCategory',
+          component: EditCategory,
+        },
+        {
           path: '/warehouse',
           name: 'IndexWarehouse',
           component: IndexWarehouse,
@@ -62,6 +69,11 @@ const router = createRouter({
           path: '/create-item',
           name: 'CreateItem',
           component: CreateItem,
+        },
+        {
+          path: '/edit-item/:id/:name/:category_id/:description',
+          name: 'EditItem',
+          component: EditItem,
         },
         {
           path: '/supplier',
